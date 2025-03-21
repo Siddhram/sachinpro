@@ -13,13 +13,12 @@ function App() {
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
   const [locationMethod, setLocationMethod] = useState('');
-  
+
   // Fetch hospitals based on location
   const fetchNearbyHospitals = useCallback(async (lat, lng) => {
     try {
       setLoading(true);
-      // In development, this uses the Vite proxy configured in vite.config.js
-      const response = await fetch(`/api/hospitals?lat=${lat}&lng=${lng}`);
+      const response = await fetch(`https://gmaps-igez.onrender.com/api/hospitals?lat=${lat}&lng=${lng}`);
       
       if (!response.ok) {
         throw new Error("Failed to fetch nearby hospitals");
@@ -49,8 +48,7 @@ function App() {
   // Function to get precise location using Google Maps Geocoding API
   const refinePreciseLocation = useCallback(async (latitude, longitude) => {
     try {
-      // This requires setting up a proxy endpoint on your server that forwards to Google's geocoding API
-      const response = await fetch(`/api/geocode?latlng=${latitude},${longitude}`);
+      const response = await fetch(`https://gmaps-igez.onrender.com/api/geocode?latlng=${latitude},${longitude}`);
       
       if (!response.ok) {
         throw new Error('Failed to refine location');
@@ -59,7 +57,6 @@ function App() {
       const data = await response.json();
       
       if (data.status === 'OK' && data.results && data.results.length > 0) {
-        // Get the most precise result (usually the first one)
         const location = data.results[0].geometry.location;
         return { 
           lat: location.lat, 
@@ -80,7 +77,6 @@ function App() {
   const getUserLocation = useCallback(async () => {
     setLocationLoading(true);
     
-    // Check if Google Maps API key is available
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       setError("Google Maps API key is missing. Please check your environment variables.");
       setLocationLoading(false);
@@ -90,27 +86,23 @@ function App() {
     
     const locationOptions = { 
       enableHighAccuracy: true,
-      timeout: 15000,  // Extended timeout
-      maximumAge: 0    // Always get fresh position
+      timeout: 15000,
+      maximumAge: 0    
     };
     
     try {
-      // Try to get high accuracy location first
       if (navigator.geolocation) {
         const getPositionPromise = new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, locationOptions);
         });
         
-        // Set a timeout in case getting high accuracy takes too long
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Location request timed out')), 15000);
         });
         
-        // Race between getting position and timeout
         const position = await Promise.race([getPositionPromise, timeoutPromise]);
         
-        const { latitude, longitude, accuracy } = position.coords;
-        console.log("Location obtained:", latitude, longitude, "Accuracy:", accuracy, "meters");
+        const { latitude, longitude } = position.coords;
         
         // Refine location using Google's geocoding for better accuracy
         const refinedLocation = await refinePreciseLocation(latitude, longitude);
@@ -129,11 +121,11 @@ function App() {
       }
     } catch (geoError) {
       console.error("Geolocation high-accuracy error:", geoError);
-      
+
       // Fallback to IP-based geolocation
       try {
         console.log("Falling back to IP-based geolocation...");
-        const response = await fetch('/api/ip-location');
+        const response = await fetch('https://gmaps-igez.onrender.com/api/ip-location');
         
         if (!response.ok) {
           throw new Error("IP location service failed");
@@ -166,14 +158,14 @@ function App() {
   const updateLocationManually = useCallback(async (address) => {
     try {
       setLocationLoading(true);
-      
+
       // Geocode the address to coordinates
-      const response = await fetch(`/api/geocode-address?address=${encodeURIComponent(address)}`);
+      const response = await fetch(`https://gmaps-igez.onrender.com/api/geocode-address?address=${encodeURIComponent(address)}`);
       
       if (!response.ok) {
         throw new Error('Failed to geocode address');
       }
-      
+
       const data = await response.json();
       
       if (data.status === 'OK' && data.results && data.results.length > 0) {
@@ -266,51 +258,51 @@ function App() {
             </form>
           </div>
         </div>
-      ) : (
-        <div className="main-content">
-          <div className="sidebar">
-            <div className="location-controls">
-              <button className="refresh-location-button" onClick={refreshLocation}>
-                <span className="refresh-icon">↻</span> Refresh My Location
-              </button>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const address = e.target.elements.address.value;
-                if (address) updateLocationManually(address);
-              }} className="manual-location-form">
-                <input 
-                  type="text" 
-                  name="address" 
-                  placeholder="Search different location"
-                  className="location-input"
-                />
-                <button type="submit" className="mini-submit-button">
-                  Go
-                </button>
-              </form>
-            </div>
-            <HospitalList 
-              hospitals={hospitals} 
-              userLocation={userLocation} 
-              selectedHospital={selectedHospital}
-              onHospitalSelect={handleHospitalSelect}
-            />
-          </div>
-          <div className="map-section">
-            <HospitalMap 
-              userLocation={userLocation} 
-              hospitals={hospitals} 
-              selectedHospital={selectedHospital}
-              onLocationUpdate={(newLocation) => {
-                setUserLocation(newLocation);
-                fetchNearbyHospitals(newLocation.lat, newLocation.lng);
-              }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+       ) : (
+         <div className="main-content">
+           <div className="sidebar">
+             <div className="location-controls">
+               <button className="refresh-location-button" onClick={refreshLocation}>
+                 <span className="refresh-icon">↻</span> Refresh My Location
+               </button>
+               <form onSubmit={(e) => {
+                 e.preventDefault();
+                 const address = e.target.elements.address.value;
+                 if (address) updateLocationManually(address);
+               }} className="manual-location-form">
+                 <input 
+                   type="text" 
+                   name="address" 
+                   placeholder="Search different location"
+                   className="location-input"
+                 />
+                 <button type="submit" className="mini-submit-button">
+                   Go
+                 </button>
+               </form>
+             </div>
+             <HospitalList 
+               hospitals={hospitals} 
+               userLocation={userLocation} 
+               selectedHospital={selectedHospital}
+               onHospitalSelect={handleHospitalSelect}
+             />
+           </div>
+           <div className="map-section">
+             <HospitalMap 
+               userLocation={userLocation} 
+               hospitals={hospitals} 
+               selectedHospital={selectedHospital}
+               onLocationUpdate={(newLocation) => {
+                 setUserLocation(newLocation);
+                 fetchNearbyHospitals(newLocation.lat, newLocation.lng);
+               }}
+             />
+           </div>
+         </div>
+       )}
+     </div>
+   );
 }
 
 export default App;
