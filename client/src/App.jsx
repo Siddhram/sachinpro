@@ -18,7 +18,7 @@ function App() {
   const fetchNearbyHospitals = useCallback(async (lat, lng) => {
     try {
       setLoading(true);
-      const response = await fetch(`https://gmaps-igez.onrender.com/api/hospitals?lat=${lat}&lng=${lng}`);
+      const response = await fetch(`https://sachinpro-1.onrender.com/api/hospitals?lat=${lat}&lng=${lng}`);
       
       if (!response.ok) {
         throw new Error("Failed to fetch nearby hospitals");
